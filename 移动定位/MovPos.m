@@ -25,7 +25,7 @@ space_Size = [9,9,3];
 m_Lam = 1;
 P_leds = [3,3,3;3,6,3;6,3,3;6,6,3];
 P_ue_init = [1,1,1];
-V_ue = [0.1,0.1,0];
+V_ue = [0.5,0.5,0];
 W_ue = pi;
 A_rd = 1;
 %*****************************************************
@@ -37,7 +37,7 @@ figure
 plot(P_ue(1),P_ue(2),'*','Color','#A1111F','MarkerSize',12);
 axis([0 9 0 9]);
 hold on;
-for i=1:70
+for i=1:13
    P_ue = P_ue + V_ue;
    plot(P_ue(1),P_ue(2),'.','Color','#A2142F','MarkerSize',10);
    hold on;
