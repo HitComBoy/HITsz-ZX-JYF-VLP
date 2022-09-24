@@ -7,11 +7,14 @@
 %
 %   光源的伦勃朗辐照阶数：m_Lam
 %   光源的位置：P_leds
+%   光源的法线向量：Q_led
+%   光源的半功率角：FOV
 %
 %   机器人初始位置：P_ue_init
 %   机器人移动速度：V_ue
 %   机器人旋转平台角速度：W_ue/0
 %   机器人光电检测器有效接受面积:A_rd
+%   机器人光电检测的伦勃朗阶数：M_Lam
 %
 % 步骤：
 %   1.创建机器人二维移动过程
@@ -24,12 +27,30 @@
 space_Size = [9,9,3];
 m_Lam = 1;
 P_leds = [3,3,3;3,6,3;6,3,3;6,6,3];
+Q_led = [0,0,-1];
+FOV = pi/3;
 P_ue_init = [1,1,1];
 V_ue = [0.5,0.5,0];
 W_ue = pi;
 A_rd = 1;
+M_Lam = 1;
 %*****************************************************
-%                  移动展示
+%                  1.机器人的二位移动过程
+%*****************************************************
+% 
+% P_ue = P_ue_init;
+% figure
+% plot(P_ue(1),P_ue(2),'*','Color','#A1111F','MarkerSize',12);
+% axis([0 9 0 9]);
+% hold on;
+% for i=1:13
+%    P_ue = P_ue + V_ue;
+%    plot(P_ue(1),P_ue(2),'.','Color','#A2142F','MarkerSize',10);
+%    hold on;
+%    pause(0.2);
+% end
+%*****************************************************
+%  2.在单位时间内，旋转平台不动的情况下完成K=3的VLP定位
 %*****************************************************
 
 P_ue = P_ue_init;
@@ -39,7 +60,31 @@ axis([0 9 0 9]);
 hold on;
 for i=1:13
    P_ue = P_ue + V_ue;
-   plot(P_ue(1),P_ue(2),'.','Color','#A2142F','MarkerSize',10);
+   color = [rand rand rand];
+   plot(P_ue(1),P_ue(2),'.','Color',color,'MarkerSize',10);
+   hold on;
+   
+   Q_pd = [0,0,1];                                                             %PD暂时在移动过程中不移动
+   cover_LEDs = [0,0,0];                                                       %用cover_LEDs作为灯源库来存放可以cover的灯源
+   for j=1:size(P_leds)                                                        %处理当前PD能被几个光源所覆盖
+       r = P_ue-P_leds(j,:);                                                   %对于第j个灯源来说的入射向量
+       cos_theta_j = Q_led*r'/(norm(Q_led,2)*norm(r,2));
+       theta_j = acos(cos_theta_j);                                            %求对于第j个灯源来说，当前PD位置的辐照角度
+       if theta_j <= FOV                                                       %如果处于第i个灯源的覆盖范围，则添加到灯源库cover_LEDs
+           cover_LEDs = [cover_LEDs;P_leds(j,:)];
+       end
+   end
+   cover_LEDs = cover_LEDs(2:size(cover_LEDs),:);                              %当前cover_LEDs包含了能覆盖当前位置的所有LED
+   cover_Power = 0;                                                          %用cover_Power来存放每个LED对当前位置的理论接收功率
+   for j=1:size(cover_LEDs)                                                        
+       cover_Power = [cover_Power;Theory_Power(P_ue, cover_LEDs(j,:), Q_pd, Q_led, m_Lam, M_Lam, A_rd)];               
+   end        
+   cover_Power = cover_Power(2:size(cover_Power),:);                           %得到每个LED的理论功率
+   Estimated_Pos = PSO_Method(cover_Power, cover_LEDs, Q_pd, Q_led, m_Lam, M_Lam, A_rd); %在该测试点下，算法所得到的估计位置 
+   plot(Estimated_Pos(1),Estimated_Pos(2),'*','Color',color,'MarkerSize',10);
    hold on;
    pause(0.2);
 end
+
+       
+        
