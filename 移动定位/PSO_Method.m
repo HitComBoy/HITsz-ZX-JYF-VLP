@@ -1,4 +1,4 @@
-function Calculated_point = PSO_Method(Receive_power, P_led, N_pd, N_led, m, M, Ar)
+function Calculated_point = PSO_Method(Receive_power, P_led, N_pd, N_led, m, M, Ar,V_ue)
 %*********************************************************************************************%
 % Use the Particle Swarm Optimization(PSO) to calculate the position result in our method one.%
 %*********************************************************************************************%
@@ -9,35 +9,41 @@ w = 0.8;                %惯性因子(非负数)
 alpha = 0.4;            %约束因子=控制速度的权重
 v_limit = 0.2;          %速度极值
 num = 128;              %粒子数量
-num_cycle = 100;        %粒子循环次数
+num_cycle = 50;        %粒子循环次数
 %********************************Particle space spanning**************************************%
 particle = zeros(num, 7);   %一群粒子 每行=[编号 位置x 位置y 位置z 速度x 速度y 速度z]
 pi = zeros(num, 4);         %个体历史最优 每行=[编号 位置x 位置y 位置z] (每个个体均有一个历史最有 且 历史最优带有记忆=迄今为止的最优，包含过去的状态)
 pg = zeros(1, 3);           %群体历史最优 每行=[位置x 位置y 位置z] (整个粒子群仅有一个)
-pg(1) = 0 + 9*rand(1,1);    %x=0~3
-pg(2) = 0 + 9*rand(1,1);    %y=0~3
-pg(3) = 1;    %z=0~3
+pg(1) = 0 + 9*rand(1,1);    %x=0~9
+pg(2) = 0 + 9*rand(1,1);    %y=0~9
+pg(3) = 1;    %z=1
 %***********************************Particles setting*****************************************%
 for i = 1: 1: num
     %每个粒子
     particle(i,1) = i;%编号
-    particle(i,2) = 0+3*rand(1,1);%x=0~3
-    particle(i,3) = 0+3*rand(1,1);%y=0~3
-    particle(i,4) = 0+3*rand(1,1);%z=0~3
+    particle(i,2) = 0+9*rand(1,1);%x=0~9
+    particle(i,3) = 0+9*rand(1,1);%y=0~9
+    particle(i,4) = 1;%z=0~3
+%     particle(i,4) = 0+3*rand(1,1);%z=0~3
     particle(i,5) = -v_limit+v_limit*2*rand(1,1);%vx=-v_limit~v_limit
     particle(i,6) = -v_limit+v_limit*2*rand(1,1);%vy=-v_limit~v_limit
-    particle(i,7) = -v_limit+v_limit*2*rand(1,1);%vz=-v_limit~v_limit
+%     particle(i,7) = -v_limit+v_limit*2*rand(1,1);%vz=-v_limit~v_limit
+    particle(i,7) = 0;
     %个体历史最优
     pi(i,1) = particle(i,1);%编号
     pi(i,2) = particle(i,2);%x
     pi(i,3) = particle(i,3);%y
-    pi(i,4) = particle(i,3);%z
+    pi(i,4) = particle(i,4);%z
     %群体历史最优初值
     Theory_Pow = 0;
     GlocalBest_Theory_Pow = 0;
     for j = 1:size(P_led)
-        Theory_Pow = [Theory_Pow,Theory_Power(particle(i,2:4), P_led(j,:), N_pd, N_led, m, M, Ar)];
-        GlocalBest_Theory_Pow = [GlocalBest_Theory_Pow,Theory_Power(pg, P_led(j,:), N_pd, N_led, m, M, Ar)];
+        Theory_Pow = [Theory_Pow;Theory_Power(particle(i,2:4)-V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+        Theory_Pow = [Theory_Pow;Theory_Power(particle(i,2:4)-0.5*V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+        Theory_Pow = [Theory_Pow;Theory_Power(particle(i,2:4), P_led(j,:), N_pd, N_led, m, M, Ar)];
+        GlocalBest_Theory_Pow = [GlocalBest_Theory_Pow;Theory_Power(pg-V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+        GlocalBest_Theory_Pow = [GlocalBest_Theory_Pow;Theory_Power(pg-0.5*V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+        GlocalBest_Theory_Pow = [GlocalBest_Theory_Pow;Theory_Power(pg, P_led(j,:), N_pd, N_led, m, M, Ar)];
     end
     Theory_Pow = Theory_Pow(2:size(Theory_Pow),:);
     GlocalBest_Theory_Pow = GlocalBest_Theory_Pow(2:size(GlocalBest_Theory_Pow),:); 
@@ -68,21 +74,21 @@ for cycle=1:1:num_cycle%粒子群运动次数
         x_id = x_id + alpha*v_id;
         
         %2) 对于越界的粒子进行调整: 反射边界上=速度大小不变 方向取反
-        if ( x_id(1)>3 && v_id(1)>0 ) || ( x_id(1)<0 && v_id(1)<0 )%x+或x-方向越界
+        if ( x_id(1)>9 && v_id(1)>0 ) || ( x_id(1)<0 && v_id(1)<0 )%x+或x-方向越界
             x_id = x_id - alpha*v_id;%恢复之前的位置
             v_id(1) = -v_id(1);%x方向上速度取反
             x_id = x_id + alpha*v_id;%然后再运动
         end
-        if ( x_id(2)>3 && v_id(2)>0 ) || ( x_id(2)<0 && v_id(2)<0 )%y+或y-方向越界
+        if ( x_id(2)>9 && v_id(2)>0 ) || ( x_id(2)<0 && v_id(2)<0 )%y+或y-方向越界
             x_id = x_id - alpha*v_id;%恢复之前的位置
             v_id(2) = -v_id(2);%y方向上速度取反
             x_id = x_id + alpha*v_id;%然后再运动
         end
-        if ( x_id(3)>3 && v_id(3)>0 ) || ( x_id(3)<0 && v_id(3)<0 )%z+或z-方向越界
-            x_id = x_id - alpha*v_id;%恢复之前的位置
-            v_id(3) = -v_id(3);%y方向上速度取反
-            x_id = x_id + alpha*v_id;%然后再运动
-        end
+%         if ( x_id(3)>3 && v_id(3)>0 ) || ( x_id(3)<0 && v_id(3)<0 )%z+或z-方向越界
+%             x_id = x_id - alpha*v_id;%恢复之前的位置
+%             v_id(3) = -v_id(3);%y方向上速度取反
+%             x_id = x_id + alpha*v_id;%然后再运动
+%         end
         
         %3) 粒子运动
 		%刷新粒子的位置和速度
@@ -94,9 +100,15 @@ for cycle=1:1:num_cycle%粒子群运动次数
         LocalBest_Theory_Pow = 0;
         GlocalBest_Theory_Pow = 0;
         for j = 1:size(P_led)
-            Theory_Pow = [Theory_Pow,Theory_Power(particle(i,2:4), P_led(j,:), N_pd, N_led, m, M, Ar)];
-            LocalBest_Theory_Pow = [LocalBest_Theory_Pow,Theory_Power(pi(i,2:4), P_led(j,:), N_pd, N_led, m, M, Ar)];
-            GlocalBest_Theory_Pow = [GlocalBest_Theory_Pow,Theory_Power(tmp_pg, P_led(j,:), N_pd, N_led, m, M, Ar)];
+            Theory_Pow = [Theory_Pow;Theory_Power(particle(i,2:4)-V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+            Theory_Pow = [Theory_Pow;Theory_Power(particle(i,2:4)-0.5*V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+            Theory_Pow = [Theory_Pow;Theory_Power(particle(i,2:4), P_led(j,:), N_pd, N_led, m, M, Ar)];
+            LocalBest_Theory_Pow = [LocalBest_Theory_Pow;Theory_Power(pi(i,2:4)-V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+            LocalBest_Theory_Pow = [LocalBest_Theory_Pow;Theory_Power(pi(i,2:4)-0.5*V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+            LocalBest_Theory_Pow = [LocalBest_Theory_Pow;Theory_Power(pi(i,2:4), P_led(j,:), N_pd, N_led, m, M, Ar)];
+            GlocalBest_Theory_Pow = [GlocalBest_Theory_Pow;Theory_Power(tmp_pg-V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+            GlocalBest_Theory_Pow = [GlocalBest_Theory_Pow;Theory_Power(tmp_pg-0.5*V_ue, P_led(j,:), N_pd, N_led, m, M, Ar)];
+            GlocalBest_Theory_Pow = [GlocalBest_Theory_Pow;Theory_Power(tmp_pg, P_led(j,:), N_pd, N_led, m, M, Ar)];
         end
         Theory_Pow = Theory_Pow(2:size(Theory_Pow),:);
         LocalBest_Theory_Pow = LocalBest_Theory_Pow(2:size(LocalBest_Theory_Pow),:);

@@ -30,7 +30,7 @@ P_leds = [3,3,3;3,6,3;6,3,3;6,6,3];
 Q_led = [0,0,-1];
 FOV = pi/3;
 P_ue_init = [1,1,1];
-V_ue = [0.5,0.5,0];
+V_ue = [0.2,0.2,0];
 W_ue = pi;
 A_rd = 1;
 M_Lam = 1;
@@ -55,10 +55,29 @@ M_Lam = 1;
 
 P_ue = P_ue_init;
 figure
-plot(P_ue(1),P_ue(2),'*','Color','#A1111F','MarkerSize',12);
+plot(P_leds(1,1),P_leds(1,2),'s','Color','r','MarkerSize',12);
+hold on;
+rectangle('Position',[P_leds(1,1)-(3*sqrt(3)) P_leds(1,2)-(3*sqrt(3)) 2*3*sqrt(3) 2*3*sqrt(3)],'Curvature',[1 1],'EdgeColor','r');
+axis equal
+hold on;
+plot(P_leds(2,1),P_leds(2,2),'s','Color','g','MarkerSize',12);
+hold on;
+rectangle('Position',[P_leds(2,1)-(3*sqrt(3)) P_leds(2,2)-(3*sqrt(3)) 2*3*sqrt(3) 2*3*sqrt(3)],'Curvature',[1 1],'EdgeColor','g');
+axis equal
+hold on;
+plot(P_leds(3,1),P_leds(3,2),'s','Color','b','MarkerSize',12);
+hold on;
+rectangle('Position',[P_leds(3,1)-(3*sqrt(3)) P_leds(3,2)-(3*sqrt(3)) 2*3*sqrt(3) 2*3*sqrt(3)],'Curvature',[1 1],'EdgeColor','b');
+axis equal
+hold on;
+plot(P_leds(4,1),P_leds(4,2),'s','Color','m','MarkerSize',12);
+hold on;
+rectangle('Position',[P_leds(4,1)-(3*sqrt(3)) P_leds(4,2)-(3*sqrt(3)) 2*3*sqrt(3) 2*3*sqrt(3)],'Curvature',[1 1],'EdgeColor','m');
+axis equal
+hold on;
 axis([0 9 0 9]);
 hold on;
-for i=1:13
+for i=1:20
    P_ue = P_ue + V_ue;
    color = [rand rand rand];
    plot(P_ue(1),P_ue(2),'.','Color',color,'MarkerSize',10);
@@ -75,15 +94,17 @@ for i=1:13
        end
    end
    cover_LEDs = cover_LEDs(2:size(cover_LEDs),:);                              %当前cover_LEDs包含了能覆盖当前位置的所有LED
-   cover_Power = 0;                                                          %用cover_Power来存放每个LED对当前位置的理论接收功率
-   for j=1:size(cover_LEDs)                                                        
-       cover_Power = [cover_Power;Theory_Power(P_ue, cover_LEDs(j,:), Q_pd, Q_led, m_Lam, M_Lam, A_rd)];               
+   cover_Power = 0;                                                            %用cover_Power来存放每个LED对当前位置的理论接收功率
+   for j=1:size(cover_LEDs)
+       cover_Power = [cover_Power;Theory_Power(P_ue - V_ue, cover_LEDs(j,:), Q_pd, Q_led, m_Lam, M_Lam, A_rd)];     %上一个位置处的接收功率
+       cover_Power = [cover_Power;Theory_Power(P_ue - 0.5*V_ue, cover_LEDs(j,:), Q_pd, Q_led, m_Lam, M_Lam, A_rd)]; %中间位置处的接收功率
+       cover_Power = [cover_Power;Theory_Power(P_ue, cover_LEDs(j,:), Q_pd, Q_led, m_Lam, M_Lam, A_rd)];            %当前位置处的接收功率               
    end        
    cover_Power = cover_Power(2:size(cover_Power),:);                           %得到每个LED的理论功率
-   Estimated_Pos = PSO_Method(cover_Power, cover_LEDs, Q_pd, Q_led, m_Lam, M_Lam, A_rd); %在该测试点下，算法所得到的估计位置 
+   Estimated_Pos = PSO_Method(cover_Power, cover_LEDs, Q_pd, Q_led, m_Lam, M_Lam, A_rd,V_ue); %在该测试点下，算法所得到的估计位置 
    plot(Estimated_Pos(1),Estimated_Pos(2),'*','Color',color,'MarkerSize',10);
    hold on;
-   pause(0.2);
+   pause(0.1);
 end
 
        
