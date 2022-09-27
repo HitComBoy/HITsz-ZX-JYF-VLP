@@ -28,7 +28,7 @@ space_Size = [9,9,3];
 m_Lam = 1;
 P_leds = [3,3,3;3,6,3;6,3,3;6,6,3];
 Q_led = [0,0,-1];
-FOV = pi/3;
+FOV = cos(pi/3);
 P_ue_init = [1,1,1];
 V_ue = [0.2,0.2,0];
 W_ue = pi;
@@ -57,29 +57,32 @@ P_ue = P_ue_init;
 figure
 plot(P_leds(1,1),P_leds(1,2),'s','Color','r','MarkerSize',12);
 hold on;
-rectangle('Position',[P_leds(1,1)-(3*sqrt(3)) P_leds(1,2)-(3*sqrt(3)) 2*3*sqrt(3) 2*3*sqrt(3)],'Curvature',[1 1],'EdgeColor','r');
+rectangle('Position',[P_leds(1,1)-(2*sqrt(3)) P_leds(1,2)-(2*sqrt(3)) 2*2*sqrt(3) 2*2*sqrt(3)],'Curvature',[1 1],'EdgeColor','r');
 axis equal
 hold on;
 plot(P_leds(2,1),P_leds(2,2),'s','Color','g','MarkerSize',12);
 hold on;
-rectangle('Position',[P_leds(2,1)-(3*sqrt(3)) P_leds(2,2)-(3*sqrt(3)) 2*3*sqrt(3) 2*3*sqrt(3)],'Curvature',[1 1],'EdgeColor','g');
+rectangle('Position',[P_leds(2,1)-(2*sqrt(3)) P_leds(2,2)-(2*sqrt(3)) 2*2*sqrt(3) 2*2*sqrt(3)],'Curvature',[1 1],'EdgeColor','g');
 axis equal
 hold on;
 plot(P_leds(3,1),P_leds(3,2),'s','Color','b','MarkerSize',12);
 hold on;
-rectangle('Position',[P_leds(3,1)-(3*sqrt(3)) P_leds(3,2)-(3*sqrt(3)) 2*3*sqrt(3) 2*3*sqrt(3)],'Curvature',[1 1],'EdgeColor','b');
+rectangle('Position',[P_leds(3,1)-(2*sqrt(3)) P_leds(3,2)-(2*sqrt(3)) 2*2*sqrt(3) 2*2*sqrt(3)],'Curvature',[1 1],'EdgeColor','b');
 axis equal
 hold on;
 plot(P_leds(4,1),P_leds(4,2),'s','Color','m','MarkerSize',12);
 hold on;
-rectangle('Position',[P_leds(4,1)-(3*sqrt(3)) P_leds(4,2)-(3*sqrt(3)) 2*3*sqrt(3) 2*3*sqrt(3)],'Curvature',[1 1],'EdgeColor','m');
+rectangle('Position',[P_leds(4,1)-(2*sqrt(3)) P_leds(4,2)-(2*sqrt(3)) 2*2*sqrt(3) 2*2*sqrt(3)],'Curvature',[1 1],'EdgeColor','m');
 axis equal
 hold on;
 axis([0 9 0 9]);
 hold on;
-for i=1:20
+for i=1:10
+   V_ue = [2,2,0];
+   V_ue = V_ue.*[rand rand 1];
    P_ue = P_ue + V_ue;
    color = [rand rand rand];
+   %plot([P_ue(1)-V_ue(1) P_ue(1)],[P_ue(2)-V_ue(2) P_ue(2)],'Color','r');
    plot(P_ue(1),P_ue(2),'.','Color',color,'MarkerSize',10);
    hold on;
    
@@ -88,8 +91,8 @@ for i=1:20
    for j=1:size(P_leds)                                                        %处理当前PD能被几个光源所覆盖
        r = P_ue-P_leds(j,:);                                                   %对于第j个灯源来说的入射向量
        cos_theta_j = Q_led*r'/(norm(Q_led,2)*norm(r,2));
-       theta_j = acos(cos_theta_j);                                            %求对于第j个灯源来说，当前PD位置的辐照角度
-       if theta_j <= FOV                                                       %如果处于第i个灯源的覆盖范围，则添加到灯源库cover_LEDs
+       %theta_j = acos(cos_theta_j);                                            %求对于第j个灯源来说，当前PD位置的辐照角度
+       if cos_theta_j >= FOV                                                       %如果处于第i个灯源的覆盖范围，则添加到灯源库cover_LEDs
            cover_LEDs = [cover_LEDs;P_leds(j,:)];
        end
    end
@@ -104,7 +107,13 @@ for i=1:20
    Estimated_Pos = PSO_Method(cover_Power, cover_LEDs, Q_pd, Q_led, m_Lam, M_Lam, A_rd,V_ue); %在该测试点下，算法所得到的估计位置 
    plot(Estimated_Pos(1),Estimated_Pos(2),'*','Color',color,'MarkerSize',10);
    hold on;
-   pause(0.1);
+   str =  ['This position is coverd by  ' num2str(size(cover_LEDs,1)) '  LED'];
+   disp(str)
+   str =  ['This time V_ue is = ' num2str(V_ue(1)) ' ' num2str(V_ue(2)) ' The Speed length is ' num2str(norm(V_ue,2))];
+   disp(str)
+   str =  ['This time error is = ' num2str(norm(Estimated_Pos-P_ue,2))];
+   disp(str)
+   pause(0.001);
 end
 
        
